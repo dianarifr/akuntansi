@@ -68,7 +68,7 @@ function addSaldo()
     var td = document.createElement("TD");
     td.setAttribute("align","left");
     td.style.verticalAlign = 'top';
-    td.innerHTML+='<div class="form-group"><select name="cbobulan_'+scounter+'" id="cbobulan_'+scounter+'" class="form-control autoselect" onChange="ambilPeriode('+scounter+')"><?php echo "<option value=\'0\'>Pilih Bulan...</option>";foreach ($arrBulan as $key){ $b = str_pad($value["bulan"],2,"0",STR_PAD_LEFT);
+    td.innerHTML+='<div class="form-group"><select name="cbobulan_'+scounter+'" id="cbobulan_'+scounter+'" class="form-control autoselect" onChange="ambilPeriode('+scounter+')"><?php echo "<option value=\'0\'>-- Pilih Bulan --</option>";foreach ($arrBulan as $key){ $b = str_pad($value["bulan"],2,"0",STR_PAD_LEFT);
                                     echo "              <option value=\'".$key."\'>".namaBulan_id($key)."</option>";
                                                 }
                                     echo "      </select></div>"; ?> ';
@@ -78,7 +78,7 @@ function addSaldo()
     var td = document.createElement("TD");
     td.setAttribute("align","left");
     td.style.verticalAlign = 'top';
-    td.innerHTML+='<div class="form-group"><select name="cbotahun_'+scounter+'" id="cbotahun_'+scounter+'" class="form-control autoselect" onChange="ambilPeriode('+scounter+')"><?php echo "<option value=\'0\'>Pilih Tahun...</option>"; foreach ($arTahun as $key){ $t = $value['tahun'];
+    td.innerHTML+='<div class="form-group"><select name="cbotahun_'+scounter+'" id="cbotahun_'+scounter+'" class="form-control autoselect" onChange="ambilPeriode('+scounter+')"><?php echo "<option value=\'0\'>-- Pilih Tahun --</option>"; foreach ($arTahun as $key){ $t = $value['tahun'];
                                     echo "              <option value=\'".$key."\'>".$key."</option>";
                                                 }
                                     echo "      </select></div>"; ?> ';
@@ -99,7 +99,6 @@ function addSaldo()
     trow.appendChild(td);
     
     ttable.appendChild(trow);
-    $('.autoselect').select2();
 }
 
 function validasiForm(form)
@@ -123,7 +122,6 @@ function validasiForm(form)
             if(document.getElementById('txtNominal_'+i).value==""){
                 document.getElementById("txtNominal_"+i).value=0;
             }
-
         }
     }
 

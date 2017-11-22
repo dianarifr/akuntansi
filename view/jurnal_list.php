@@ -174,7 +174,7 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                 //Query
                 $q = "SELECT j.noJurnal, j.keterangan, j.statusPosting, DATE_FORMAT(j.tgl,'%d-%m-%Y') AS tglJurnal, d.total 
                         FROM jurnal j 
-                        LEFT JOIN (SELECT noJurnal,SUM(nominal) as total FROM detailJurnal GROUP BY noJurnal,normal) d ON d.noJurnal=j.noJurnal 
+                        LEFT JOIN (SELECT noJurnal,SUM(nominal) as total FROM detailJurnal GROUP BY noJurnal,dok) d ON d.noJurnal=j.noJurnal 
                         WHERE 1=1 ".$filter." ORDER BY j.idperiode, j.noJurnal";
 
                 //Paging
