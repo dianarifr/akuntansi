@@ -3,9 +3,9 @@
 //Created : 11/11/2017
 //Memastikan file ini tidak diakses secara langsung (direct access is not allowed)
 defined('validSession') or die('Restricted access');
-$curPage = "view/jurnal_list";
+$curPage = "view/posting_list";
 //Periksa hak user pada modul/menu ini
-$judulMenu = 'Pengaturan Jurnal';
+$judulMenu = 'Pengaturan Posting';
 $hakUser = getUserPrivilege($curPage);
 
 require_once("./class/c_akun.php");
@@ -21,23 +21,14 @@ if ($hakUser < 10) {
 //Periksa apakah merupakan proses headerless (tambah, edit atau hapus) dan apakah hak user cukup
 if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
 
-    //Jika Mode Tambah/Add
-
-    if ($_POST["txtMode"]=="Add")
+    if ($_POST["btn"]=="posting" || $_POST["btn"]=="postingsemua")
     {
-            $pesan=$tmp->addJurnal($_POST);
+            $pesan=$tmp->savePosting($_POST);
     }
 
-    //Jika Mode Ubah/Edit
-    if ($_POST["txtMode"]=="Edit")
+    if ($_POST["btn"]=="batalposting" || $_POST["btn"]=="batalpostingsemua")
     {
-            $pesan=$tmp->editJurnal($_POST); 
-    }
-
-    //Jika Mode Hapus/Delete
-    if ($_GET["txtMode"]=="Delete")
-    {
-            $pesan=$tmp->deleteJurnal($_GET["kode"]);
+            $pesan=$tmp->saveBatalPosting($_POST);
     }
 
     //Seharusnya semua transaksi Add dan Edit Sukses karena data sudah tervalidasi dengan javascript di form detail.
@@ -53,12 +44,12 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
 <section class="content-header">
     <h1>
         PENGATURAN JURNAL
-        <small>List Jurnal</small>
+        <small>List Posting</small>
     </h1>
     <ol class="breadcrumb">
         <li><a href="index.php"><i class="fa fa-dashboard"></i> Home</a></li>
         <li class="active">Transaksi</li>
-        <li class="active">Jurnal</li>
+        <li class="active">Posting</li>
     </ol>
 </section>
 <!-- Main content -->
@@ -72,7 +63,7 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
             <div class="box box-primary">
                 <div class="box-header">
                     <i class="ion ion-clipboard"></i>
-                    <h3 class="box-title">Kriteria Pencarian Jurnal </h3>
+                    <h3 class="box-title">Kriteria Pencarian Posting </h3>
                 </div>
 
 
@@ -80,6 +71,17 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                 <div class="box-body">
                     <form name="frmCariInisiasi" method="GET" action="<?php echo $_SERVER['PHP_SELF']; ?>">
                         <input type="hidden" name="page" value="<?php echo $curPage; ?>">
+
+                            <?php
+                            $_GET['statusPosting'] = (!isset($_GET['statusPosting'])?0:$_GET['statusPosting']);
+                            if(!isset($_GET['idperiode'])){
+                                $periode = $tmp->getPeriodeAktif();
+                            }else{
+                                $periode['idperiode'] = secureParam($_GET['idperiode'],$dbLink);
+                                $periode['tahun'] = substr($periode['idperiode'], 2, 4);
+                                $periode['bulan'] = substr($periode['idperiode'], 0, 2);
+                            }
+                            ?>
 
                             <select name="idperiode" id="idperiode" class="form-control input-sm autoselect"  onKeyPress="return handleEnter(this, event)">
                                 <option value="" >Pilih Periode...</option>
@@ -93,22 +95,12 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                                 }
                                 ?>
                             </select>
-
-                        <div class="input-group input-group-sm">
-                            <input type="text" class="form-control" name="noJurnal" id="noJurnal" placeholder="No Jurnal..."
-                            <?php
-                            if ($_GET["noJurnal"]) {
-                                echo("value='" . $_GET["noJurnal"] . "'");
-                            }
-                            if(!isset($_GET['idperiode'])){
-                                $periode = $tmp->getPeriodeAktif();
-                            }else{
-                                $periode['idperiode'] = secureParam($_GET['idperiode'],$dbLink);
-                                $periode['tahun'] = substr($periode['idperiode'], 0, 4);
-                                $periode['bulan'] = substr($periode['idperiode'], 4, 2);
-                            }
-                            ?> onKeyPress="return handleEnter(this, event)">
                         
+                        <div class="input-group input-group-sm">
+                            <select name="statusPosting" class="form-control">
+                                <option value="0" <?= ($_GET["statusPosting"]=="0"?" selected":"") ?> >Belum Posting</option>
+                                <option value="1" <?= ($_GET["statusPosting"]=="1"?" selected":"") ?> >Sudah Posting</option>
+                            </select>
                             <span class="input-group-btn">
                                 <button type="submit" class="btn btn-info btn-flat">Go!</button>
                             </span>
@@ -118,13 +110,32 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                 </div>
                 <!-- /.box-body -->
                 <div class="box-footer clearfix">
+                    <form name="frmPosting" id="frmPosting" method="POST" action="index2.php?page=view/posting_list">
+                        <input type="hidden" name="idperiode" id="idperiode2" value="<?=$periode['idperiode']?>">
+                        <input type="hidden" name="status" id="status2" value="<?=$_GET['status']?>">
+                        <input type="hidden" name="namaPeriode" id="namaPeriode" value="<?=namaBulan_id($periode['bulan'])." ".$periode['tahun']?>">
+                        <input type="hidden" name="noJurnal" id="noJurnal">
+                        <input type="hidden" name="btn" id="btn">
                     <?php
                     if ($hakUser == 90) {
-                        ?>
-                        <a href="<?php echo $_SERVER['PHP_SELF'] . "?page=view/jurnal_detail&mode=add"; ?>"><button type="button" class="btn btn-default pull-right"><i class="fa fa-plus"></i> Tambah Data</button></a>
-                        <?php
+                        if(!isset($_GET["statusPosting"]) || $_GET['statusPosting']=='0'){
+                    ?>
+                    <div class="pull-right">
+                        <button type="button" id="posting" class="btn btn-primary"><i class="fa fa-save"></i> Posting</button>&nbsp;
+                        <button type="button" id="postingsemua" class="btn btn-success"><i class="fa fa-save"></i> Posting Semua</button>
+                    </div>
+                    <?php
+                        }elseif (isset($_GET["statusPosting"]) && $_GET['statusPosting']=='1') {
+                    ?>
+                    <div class="pull-right">
+                        <button type="button" id="batalposting" class="btn btn-warning"><i class="fa fa-ban"></i> Batal Posting</button>&nbsp;
+                        <button type="button" id="batalpostingsemua" class="btn btn-danger"><i class="fa fa-ban"></i> Batal Posting Semua</button>
+                    </div>
+                    <?php
+                        }
                     }
                     ?>
+                    </form>
                 </div>
             </div>
             <!-- /.box -->
@@ -161,21 +172,19 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
         <section class="col-lg-12 connectedSortable">
             <div class="box box-primary">
                 <?php
-                $noJurnal = secureParam($_GET["noJurnal"], $dbLink);
+                $statusPosting = secureParam($_GET["statusPosting"], $dbLink);
 
                 //Set Filter berdasarkan query string
                 $filter = "";
-                if($noJurnal)
-                        $filter= $filter." AND noJurnal LIKE '%".$noJurnal."%'";
+                $filter= $filter." AND statusPosting ='".$statusPosting."'";
                 if($periode['idperiode'])
                         $filter=$filter." AND idperiode = '".$periode['idperiode']."'";
 
                 //Query
-                $q = "SELECT j.noJurnal, j.keterangan, j.statusPosting, DATE_FORMAT(j.tgl,'%d-%m-%Y') AS tglJurnal, d.total 
+                $q = "SELECT j.noJurnal, j.keterangan, j.statusPosting, DATE_FORMAT(j.tgl,'%d-%m-%Y') AS tglPosting, d.total 
                         FROM jurnal j 
-                        LEFT JOIN (SELECT noJurnal,SUM(nominal) as total FROM detailJurnal GROUP BY noJurnal) d ON d.noJurnal=j.noJurnal 
+                        LEFT JOIN (SELECT noJurnal,SUM(nominal) as total FROM detailjurnal GROUP BY noJurnal) d ON d.noJurnal=j.noJurnal 
                         WHERE 1=1 ".$filter." ORDER BY j.idperiode, j.noJurnal";
-
                 //Paging
                 $rs = new MySQLPagedResultSet($q, $recordPerPage, $dbLink);
                 ?>
@@ -188,12 +197,18 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                     <table class="table table-bordered table-striped table-hover" >
                         <thead>
                             <tr>
-                                <th style="width: 3%">#</th>
+                                <th style="width: 3%">
+                                    <?php if ($hakUser == 90) {
+                                        echo '<input type="checkbox" name="chkAll" id="chkAll" onClick="checkAll()">';
+                                    }else{
+                                        echo '#';
+                                    } ?>
+                                </th>
                                 <th style="width: 15%">Tgl</th>
-                                <th style="width: 15%">No Jurnal</th>
+                                <th style="width: 15%">No Posting</th>
                                 <th style="width: 40%">Keterangan</th>
                                 <th style="width: 20%">Nominal</th>
-                                <th colspan="2" width="7%">Aksi</th>
+                                <th colspan="2" width="7%">Status</th>
                                 
                             </tr>
                         </thead>
@@ -205,22 +220,19 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                             }
                             while ($query_data = $rs->fetchArray()) {
                                 echo "<tr>";
-                                echo "<td>" . $rowCounter . "</td>";
-                                echo "<td>" . $query_data['tglJurnal'] . "</td>";
+                                if ($hakUser == 90) {
+                                    echo "<td><input type='checkbox' name='chk[]' id='chk_".$rowCounter."' value='".$query_data["noJurnal"]."' onClick='addNoJurnal()'></td>";
+                                }else{
+                                    echo "<td>".$rowCounter."</td>";
+                                }
+                                echo "<td>" . $query_data['tglPosting'] . "</td>";
                                 echo "<td>" . $query_data['noJurnal'] . "</td>";
                                 echo "<td>" . $query_data['keterangan'] . "</td>";
                                 echo "<td align='right'>" . number_format($query_data['total'],'0',',','.') . "</td>";
-                                if ($hakUser == 90) {
-                                    if($query_data['statusPosting']==0) {
-                                        echo "<td><span class='label label-success' style='cursor:pointer;' onclick=location.href='" . $_SERVER['PHP_SELF'] . "?page=view/jurnal_detail&mode=edit&kode=" . md5($query_data['noJurnal']) . "'><i class='fa fa-edit'></i>&nbsp;Ubah</span></td>";
-                                        echo("<td><span class='label label-danger' onclick=\"if(confirm('Apakah anda yakin akan menghapus data jurnal nomor `" . $query_data['noJurnal'] . "` ?')){location.href='index2.php?page=" . $curPage . "&txtMode=Delete&kode=" . md5($query_data['noJurnal']) . "'}\" style='cursor:pointer;'><i class='fa fa-trash'></i>&nbsp;Hapus</span></td>");
-                                    }else{
-                                        echo "<td colspan='2' class='text-center'><span class='label label-info' style='cursor:pointer;' onclick=location.href='" . $_SERVER['PHP_SELF'] . "?page=view/jurnal_detail&mode=edit&kode=" . md5($query_data['noJurnal']) . "'><i class='fa fa-edit'></i>&nbsp;Detail</span></td>";
-                                    }
-//                                    
-                                } else {
-                                    echo("<td>&nbsp;</td>");
-                                    echo("<td>&nbsp;</td>");
+                                if($query_data["statusPosting"]==1){
+                                    echo "<td><span class='label label-success'>Telah Diposting</span></td>";
+                                }else{
+                                    echo "<td><span class='label label-danger'>Belum Diposting</span></td>";
                                 }
                                 echo("</tr>");
                                 $rowCounter++;
@@ -244,5 +256,51 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
     $(document).ready(function(){
         $(".autoselect").select2();
     }); 
+        function checkAll(){
+        if($('#chkAll').is(":checked")){
+            $('input[id^="chk_"]').prop('checked',true);
+        }else{
+            $('input[id^="chk_"]').prop('checked',false);
+        }
+        addNoJurnal();
+    }
+
+    function addNoJurnal(){
+        var str = '';
+        $('input[id^="chk_"]').each(function(){
+            if($(this).is(":checked")){
+                str += $(this).val()+',';
+            }
+        });
+        str = str.substring(0, str.length - 1);
+        $("#noJurnal").val(str);
+    }
+
+    $("#posting, #postingsemua, #batalposting, #batalpostingsemua").click(function(e) {
+        var id = $(this).prop('id');
+        var r = false;
+        if(id=='posting' || id=='batalposting'){
+            if($("#noJurnal").val()==''){
+                alert("Pilih data jurnal terlebih dahulu!")
+            }else{
+                r = true;
+            }
+        }else{
+            // if($("#bulan").val()=='' || $("#tahun").val()==''){
+            if($("#idperiode").val()==''){
+                alert("Pilih periode terlebih dahulu!")
+            }else{
+                if(id=='postingsemua'){
+                    r = confirm("Apakah Anda yakin akan memposting semua jurnal periode "+$("#namaPeriode").val()+"?");
+                }else{
+                    r = confirm("Apakah Anda yakin akan membatalkan posting semua jurnal periode "+$("#namaPeriode").val()+"?");
+                }
+            }           
+        }
+        if(r){
+            $("#btn").val(id);
+            $("#frmPosting").submit();
+        }        
+    });
 </script>
 

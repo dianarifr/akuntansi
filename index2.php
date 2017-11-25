@@ -6,11 +6,13 @@ define('validSession', 1);
 if (!file_exists('config.php')) {
     exit();
 }
+// ini_set('display_errors', 1);
 
 require_once( 'config.php' );
 require_once('./function/strip_html_tags.php');
 require_once('./function/secureParam.php');
 require_once('./class/c_user.php');
+require_once('./function/fungsi_formatdate.php');
 
 session_name("tempSiska");
 session_start();

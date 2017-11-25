@@ -251,7 +251,7 @@ function validasiForm(form)
         }
     }
 
-    if(document.getElementById('jumAddJurnal').value==0 || (totalD==0 && totalK==0)){
+    if(document.getElementById('jumAddJurnal').value==0 && document.getElementById('jumEditJurnal').value==0){
         alert("Detail Jurnal harus diisi !");
         return false;
     }
@@ -286,6 +286,7 @@ function validasiForm(form)
                     <div class="box-header">
                         <i class="ion ion-clipboard"></i>
                         <?php
+                        $edit = true;
                         if ($_GET["mode"] == "edit") {
                             echo '<h3 class="box-title">UBAH DATA JURNAL</h3>';
                             echo "<input type='hidden' name='txtMode' value='Edit'>";
@@ -293,7 +294,7 @@ function validasiForm(form)
                             //Secure parameter from SQL injection
                             $kode = secureParam($_GET["kode"], $dbLink);
 
-                            $q = "SELECT j.noJurnal, j.keterangan, DATE_FORMAT(j.tgl,'%d-%m-%Y') AS tglJurnal
+                            $q = "SELECT j.noJurnal, j.keterangan, DATE_FORMAT(j.tgl,'%d-%m-%Y') AS tglJurnal, statusPosting
                                     FROM jurnal j ";
                             $q.= " WHERE md5(j.noJurnal)='".$kode."'";
 
@@ -301,6 +302,8 @@ function validasiForm(form)
 
                             if ($data = mysql_fetch_array($rsTemp)) {
                                 echo "<input type='hidden' name='noJurnal' value='" . $data["noJurnal"] . "'>";
+                                if($data["statusPosting"]==1)
+                                    $edit = false;
                             } else {
                                 ?>
                                 <script language="javascript">
@@ -321,8 +324,7 @@ function validasiForm(form)
                             
                             <?php if($_GET["mode"]=="edit")
                                     {
-                                            echo '<input name="txtKodeJurnal" id="txtKodeJurnal" size="5" class="form-control text-uppercase" 
-                                   placeholder="auto" readonly value="'.$data["noJurnal"].'" onKeyPress="return handleEnter(this, event)">';
+                                            echo '<div>'.$data["noJurnal"].'</div>';
                                     }
                                     else
                                     {
@@ -333,18 +335,28 @@ function validasiForm(form)
 
                         </div>
                         
+                            <?php if($edit) { ?>
                         <div class="form-group">
                             <label class="control-label" for="txtTanggal">Tanggal</label>
                             <input name="txtTanggal" id="txtTanggal" size="35" class="form-control " 
-                                   value="<?= ($data["tgl"]==''?date("d-m-Y"):datetoind($data["tgl"])) ?>" placeholder="Wajib Isi..." 
-                                   onKeyPress="return handleEnter(this, event)">
+                                   value="<?= ($data["tglJurnal"]==''?date("d-m-Y"):datetoind($data["tglJurnal"])) ?>" placeholder="Wajib Isi..." 
+                                   onKeyPress="return handleEnter(this, event)" <?= $edit?'':'readonly'; ?> >
                         </div>
 
                         <div class="form-group">
                             <label class="control-label" for="txtKeterangan">Parent Kode Jurnal</label>
-                            <textarea placeholder="Wajib Isi..." class="form-control" name="txtKeterangan"><?= $data['keterangan'] ?></textarea>
+                            <textarea placeholder="Wajib Isi..." class="form-control" name="txtKeterangan" <?= $edit?'':'readonly'; ?> ><?= $data['keterangan'] ?></textarea>
                         </div>
-
+                            <?php }else{ ?>
+                        <div class="form-group">
+                            <label class="control-label">Tanggal</label>
+                            <div><?php echo $data["tglJurnal"]; ?></div>
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label">Keterangan</label>
+                            <div><?php echo $data["keterangan"]; ?></div>
+                        </div>
+                            <?php } ?>
                     </div>
                     
                 </div>    
@@ -363,18 +375,18 @@ function validasiForm(form)
                         <table class="table table-bordered table-striped table-hover" id="jurnal">
                             <thead>
                                 <tr>
-                                    <th style="width: 2%"><i class='fa fa-edit'></i></th>
+                                    <?php if($edit){ ?><th style="width: 2%"><i class='fa fa-edit'></i></th><?php } ?>
                                     <th style="width: 55%">Nama Akun</th>
                                     <th style="width: 20%">Debit</th>
                                     <th style="width: 20%">Kredit</th>
-                                    <th style="width: 2%"><i class='fa fa-trash'></i></th>
+                                    <?php if($edit){ ?><th style="width: 2%"><i class='fa fa-trash'></i></th><?php } ?>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php 
                                     //ambil data jurnal detail
                                     $iJurnal = $totalD = $totalK = 0;
-                                    $q = "SELECT kodeAkun, normal, nominal, nourut FROM detailjurnal WHERE noJurnal = '".$data["noJurnal"]."' ORDER BY noUrut";
+                                    $q = "SELECT id, dd.kodeAkun, dd.normal, nominal, nourut, a.nama FROM detailjurnal dd JOIN akun a ON dd.kodeAkun=a.kodeAkun WHERE noJurnal = '".$data["noJurnal"]."' ORDER BY noUrut";
                                     $rs = mysql_query($q, $dbLink);
                                     while ($row = mysql_fetch_array($rs)) {
                                         $totalD += ($row["normal"]=="debet"?$row["nominal"]:0);
@@ -389,11 +401,17 @@ function validasiForm(form)
                                     }
                                 ?>
                                 <tr>
+                                    <?php if($edit){ ?>
                                     <td>&nbsp;</td>
                                     <td class="text-uppercase text-right"><h4><strong>Total</strong></h4></td>
                                     <td><input type="text" class="form-control text-right" name="txtTotalDebit" id="txtTotalDebit" value="<?= number_format($totalD, 0, ",", ".") ?>" readonly></td>
                                     <td><input type="text" class="form-control text-right" name="txtTotalKredit" id="txtTotalKredit" value="<?= number_format($totalK, 0, ",", ".") ?>" readonly></td>
                                     <td>&nbsp;</td>
+                                    <?php }else{ ?>
+                                    <td class="text-uppercase text-right"><h4><strong>Total</strong></h4></td>
+                                    <td class="text-right"><h4><strong><?= number_format($totalD, 0, ",", ".") ?></strong></h4></td>
+                                    <td class="text-right"><h4><strong><?= number_format($totalK, 0, ",", ".") ?></strong></h4></td>
+                                    <?php } ?>
                                 </tr>
                                 <?php
                                     foreach ($arrDetJurnal as $key => $detJurnal) {
@@ -402,14 +420,16 @@ function validasiForm(form)
                                         // $totalD += $nominalD;
                                         // $totalK += $nominalK;
                                         echo '<tr>';
+                                        if($edit){
                                         echo '<td>
                                                 <div class="form-group">
-                                                    <input type="checkbox" class="minimal"  name="chkEdit_' . $iJurnal . '" id="chkEdit_' . $iJurnal . '" value="' . $detJurnal["kodeAkun"] . '" />
+                                                    <input type="checkbox" class="minimal"  name="chkEdit_' . $iJurnal . '" id="chkEdit_' . $iJurnal . '" value="' . $detJurnal["id"] . '" />
                                                 </div>
                                             </td>';
+
                                         echo '<td >
                                                 <div class="form-group">
-                                                    <select name="cboAkunE_' . $iJurnal . '" id="cboAkunE_' . $iJurnal . '" class="form-control autoselect"> <option value="0" >Pilih Kode Akun...</option>"';
+                                                    <select '.($edit?'':'disabled').' name="cboAkunE_' . $iJurnal . '" id="cboAkunE_' . $iJurnal . '" class="form-control autoselect"> <option value="0" >Pilih Kode Akun...</option>"';
                                                     foreach($arrAkunE as $key => $val) {
                                                         if($detJurnal['kodeAkun'] == $val['kodeAkun'])
                                         echo '              <option value="'.$val['kodeAkun'].'" selected>'.$val['kodeAkun'] . ' - '. $val['nama'].'</option>';
@@ -421,13 +441,26 @@ function validasiForm(form)
                                             </td>';
 
                                         echo '<td align="center" valign="top" width=><div class="form-group">
-                                            <input type="text" class="form-control text-right" name="txtDebetE_' . $iJurnal . '" id="txtDebetE_' . $iJurnal . '" value="' . number_format($nominalD, 0, ",", ".") . '" '.($nominalD>0?"":"readonly").' onkeydown="return numbersonly(this, event);" onKeyUp="disableK('.$iJurnal.')" /></div></td>';
+                                            <input '.($edit?'':'readonly').' type="text" class="form-control text-right" name="txtDebetE_' . $iJurnal . '" id="txtDebetE_' . $iJurnal . '" value="' . number_format($nominalD, 0, ",", ".") . '" '.($nominalD>0?"":"readonly").' onkeydown="return numbersonly(this, event);" onKeyUp="disableK('.$iJurnal.')" /></div></td>';
                                         
                                         echo '<td align="center" valign="top" width=><div class="form-group">
-                                            <input type="text" class="form-control text-right"  name="txtKreditE_' . $iJurnal . '" id="txtKreditE_' . $iJurnal . '" value="' . number_format($nominalK, 0, ",", ".") . '" '.($nominalK>0?"":"readonly").' onkeydown="return numbersonly(this, event);" onKeyUp="disableD('.$iJurnal.')" /></div></td>';
-
+                                            <input '.($edit?'':'readonly').' type="text" class="form-control text-right"  name="txtKreditE_' . $iJurnal . '" id="txtKreditE_' . $iJurnal . '" value="' . number_format($nominalK, 0, ",", ".") . '" '.($nominalK>0?"":"readonly").' onkeydown="return numbersonly(this, event);" onKeyUp="disableD('.$iJurnal.')" /></div></td>';
+                                        
                                         echo '<td align="center" valign="top"><div class="form-group">
-                                            <input type="checkbox" class="minimal"  name="chkDel_' . $iJurnal . '" id="chkDel_' . $iJurnal . '" value="' . $row["kodeAkun"] . '" /></div></td>';
+                                            <input type="checkbox" class="minimal"  name="chkDel_' . $iJurnal . '" id="chkDel_' . $iJurnal . '" value="' . $detJurnal["id"] . '" /></div></td>';
+                                        }else{ 
+                                        echo '<td >
+                                                    '.$detJurnal['kodeAkun'] . ' - '. $detJurnal['nama'].'
+                                            </td>';
+
+                                        echo '<td class="text-right">
+                                                    ' . number_format($nominalD, 0, ",", ".") . '
+                                            </td>';
+                                        echo '<td class="text-right">
+                                                    ' . number_format($nominalK, 0, ",", ".") . '
+                                        </td>';
+                                        
+                                        }
                                         echo '</tr>';
                                         $iJurnal++;
                                     }
@@ -439,11 +472,15 @@ function validasiForm(form)
                         <input type="hidden" value="<?= $iJurnal; ?>" id="jumEditJurnal" name="jumEditJurnal"/>
                         <br />
                         <center>
-                            <button type="button" class="btn btn-info" onclick="javascript:addJurnal()">Tambah Saldo Awal</button>
+                            <?php if($edit){ ?>
+                            <button type="button" class="btn btn-info" onclick="javascript:addJurnal()">Tambah Detail Jurnal</button>
+                            <?php } ?>
                         </center>
                     </div>
                     <div class="box-footer">
+                        <?php if($edit){ ?>
                         <input type="submit" class="btn btn-primary" value="Simpan">
+                        <?php } ?>
                         <a href="index.php?page=html/jurnal_list">
                             <button type="button" class="btn btn-default pull-right">&nbsp;&nbsp;Batal&nbsp;&nbsp;</button>    
                         </a>

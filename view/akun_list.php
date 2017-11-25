@@ -81,7 +81,6 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                     <form name="frmCariInisiasi" method="GET" action="<?php echo $_SERVER['PHP_SELF']; ?>">
                         <input type="hidden" name="page" value="<?php echo $curPage; ?>">
 
-                        <div class="input-group input-group-sm">
                             <input type="text" class="form-control" name="namaAkun" id="namaAkun" placeholder="Nama Akun..."
                             <?php
                             if ($_GET["namaAkun"]) {
@@ -95,6 +94,7 @@ if (substr($_SERVER['PHP_SELF'], -10, 10) == "index2.php" && $hakUser == 90) {
                                 <option value="kredit" <?= ($_GET["normal"]=="kredit"?" selected":"") ?> >Kredit</option>
                             </select>
                         
+                        <div class="input-group input-group-sm">
                             <select name="posisi" class="form-control" onKeyPress="return handleEnter(this, event)">
                                 <option value="0" >Pilih Posisi...</option>
                                 <option value="neraca" <?= ($_GET["posisi"]=="neraca"?" selected":"") ?> >Neraca</option>
